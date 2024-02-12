@@ -6,9 +6,8 @@ import { loggerFailed, loggerSuccess, loggerInfo } from './logger.js'
 import path from 'path';
 
 
-const getNitro = async (current, total) => {
+const getNitro = async (current, total, ua) => {
   let attempts = 2;
-
   while (attempts > 0) {
     try {
       let token;
@@ -26,7 +25,7 @@ const getNitro = async (current, total) => {
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'cross-site',
-        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'user-agent': `${ua}`,
       };
       const data = {
         partnerUserId: uuidv4(),
@@ -52,9 +51,13 @@ const getNitro = async (current, total) => {
         return link;
       } else {
         loggerFailed(`failed get promo code ${current}`)
+
+        await delay(60000)
       }
     } catch (error) {
       loggerFailed(error.message)
+      loggerInfo('u cant force close this code, if you boring waiting delay')
+      await delay(300000)
     }
     attempts--;
   }
@@ -71,6 +74,9 @@ const delay = async (ms) => {
   try {
     process.stdout.write('\x1Bc');
     console.log('Made with ❤️ by janexmgd www.facebook.com/janexmgd\n');
+    const filePath = path.join(process.cwd(), 'useragent.txt')
+    const uaTxt = fs.readFileSync(filePath, 'utf-8')
+    const listUa = uaTxt.split('\n')
     const { howMany } = await inquirer.prompt({
       name: 'howMany',
       type: 'input',
@@ -85,14 +91,15 @@ const delay = async (ms) => {
     let count = howMany;
     let current = 1;
     while (count > 0) {
-      const link = await getNitro(current, howMany);
+      const randomIndex = Math.floor(Math.random() * listUa.length)
+      const useragent = listUa[randomIndex]
+      const link = await getNitro(current, howMany, useragent);
       if (!link) {
         loggerFailed('task stopped because cant get token')
         break
       }
       count--;
       current++;
-      await delay(500)
     }
     loggerSuccess('Task stopped')
   } catch (error) {
